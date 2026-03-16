@@ -1,0 +1,19 @@
+module compare (
+    input z,
+    input v,
+    input n,
+    input alufn[6],
+    output cmp
+) {
+    mux4to1 mux
+    
+    always {
+        // implement comparison logic here
+        
+        mux.data = $reverse(c{1b0, z, n^v, (n^v)|z})
+        mux.s = alufn[2:1]
+        
+        cmp = mux.out
+        
+    }
+}
