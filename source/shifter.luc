@@ -1,0 +1,48 @@
+module shifter (
+    input a[32],
+    input b[5],
+    input alufn[6],
+    output shift[32]
+) {
+    bit_reverse rev_in
+    bit_reverse rev_out
+    left_shifter lsh
+    
+    sig pre[32]
+    sig pad
+    sig mid[32]
+
+    always {
+        // implement shifter unit logic here
+        rev_in.in = a
+        
+        case(alufn[1:0]){
+            2b00:
+                pre = a
+                pad = 1b0
+            2b01:
+                pre = rev_in.reversed
+                pad = 1b0
+            2b11:
+                pre = rev_in.reversed
+                pad = a[31] //sign bit
+            default:
+                pre = a
+                pad = 1b0
+        }
+        
+        lsh.a = pre
+        lsh.b = b[4:0]
+        lsh.pad = pad
+        
+        mid = lsh.shl
+        
+        case (alufn[1:0]) {
+            2b01: shift = rev_out.reversed
+            2b11: shift = rev_out.reversed
+            default: shift = mid
+        }
+
+        rev_out.in = mid
+    } 
+}
