@@ -1,0 +1,46 @@
+module multiplier (
+  input a[32],
+  input b[32],
+  output mul[32]
+) {
+  // 32 partial products (each is 32-bit, already shifted into place)
+  sig row[32][32]
+
+  // running sums after each addition
+  sig sum[32][32]
+
+  // We need 31 additions to add 32 rows together
+  #SIZE(32) {
+      rca add[31]
+    }
+
+  always {
+    // 1) Build 32 partial-product rows
+    // row[j] = (a AND {32 copies of b[j]}) shifted left by j, keeping only low 32 bits
+    repeat (j, 32, 0, 1) {
+      // mask a with multiplier bit b[j]
+      // if b[j]=1 -> masked=a, if b[j]=0 -> masked=0
+      sig masked[32];
+      masked = a & 32x{b[j]}
+
+      // shift-left by j within 32 bits
+      // (bits that overflow past bit31 are dropped automatically)
+      row[j] = masked << j
+    }
+
+    // 2) Accumulate rows with 32-bit RCAs (cin=0 always)
+    sum[0] = row[0]
+
+    repeat (k, 31, 0, 1) {
+      add.a[k] = sum[k]
+      add.b[k] = row[k+1]
+      add.cin[k] = 1b0
+
+      // next running sum is the adder result
+      sum[k+1] = add.s[k]
+    }
+
+    // 3) Output low 32 bits
+    mul = sum[31];
+  }
+}
