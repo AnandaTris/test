@@ -1,0 +1,29 @@
+module hex_to_7seg (
+    input value[4],     // 4-bit hex input
+    output seg[8]       // 7 segments + dp
+) {
+
+    // IO Shield is COMMON ANODE → 0 = ON, 1 = OFF
+    always {
+        seg = 8hFF   // default OFF
+
+        case (value) {
+            4h0: seg = 8b11000000 // 0
+            4h1: seg = 8b11111001 // 1
+            4h2: seg = 8b10100100 // 2
+            4h3: seg = 8b10110000 // 3
+            4h4: seg = 8b10011001 // 4
+            4h5: seg = 8b10010010 // 5
+            4h6: seg = 8b10000010 // 6
+            4h7: seg = 8b11111000 // 7
+            4h8: seg = 8b10000000 // 8
+            4h9: seg = 8b10010000 // 9
+            4hA: seg = 8b10001000 // A
+            4hB: seg = 8b10000011 // B
+            4hC: seg = 8b11000110 // C
+            4hD: seg = 8b10100001 // D
+            4hE: seg = 8b10000110 // E
+            4hF: seg = 8b10001110 // F
+        }
+    }
+}
