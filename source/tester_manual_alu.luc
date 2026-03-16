@@ -1,0 +1,92 @@
+module tester_manual_alu#(
+    CLK_FREQ ~ 1000 : CLK_FREQ > 0) 
+(
+    input clk,  // clock
+    input rst,  // reset
+    input io_button[5],
+    input io_dip[3][8],
+    output io_led[3][8],
+    output io_segment[8],
+    output io_select[4]
+) {
+    enum States {
+        LOAD_LOW_A,
+        LOAD_HIGH_A,
+        LOAD_LOW_B,
+        LOAD_HIGH_B
+    }
+    const N = 32
+    
+    sig in16[16] 
+    sig out16[16]
+    
+    alu alu
+    
+    dff states[$width(States)](#INIT(States.LOAD_LOW_A), .clk(clk), .rst(rst))
+    dff reg_a[N](#INIT(0), .clk(clk), .rst(rst))
+    dff reg_b[N](#INIT(0), .clk(clk), .rst(rst))
+    
+    button_conditioner btn_0(.clk(clk), #CLK_FREQ($is_sim() ? 1000 : 100000000), .in(io_button[0]))
+    edge_detector next_btn(.clk(clk), .in(btn_0.out), #RISE(1), #FALL(0))
+    
+    button_conditioner peek_btn(.clk(clk), #CLK_FREQ($is_sim() ? 1000 : 100000000), .in(io_button[1]))
+    
+    always {
+        // defaults
+        io_led = 3x{{8h00}};
+        io_segment = 8hFF;     // usually off (depends on board wiring)
+        io_select = 4hF;       // disable all digits (depends on board wiring)
+        
+        // implement alu tester logic here
+        states.d = states.q
+        reg_a.d = reg_a.q
+        reg_b.d = reg_b.q
+        
+        alu.a = reg_a.q
+        alu.b = reg_b.q
+        alu.alufn = io_dip[2][5:0]
+        
+        in16[7:0] = io_dip[0]
+        in16[15:8] = io_dip[1]
+        
+        if (peek_btn.out){
+            out16 = alu.out[N-1:16]
+        }else{
+            out16 = alu.out[15:0]
+        }
+        
+        
+        case(states.q){
+            States.LOAD_LOW_A:
+                
+                if (next_btn.out){
+                    reg_a.d[15:0] = in16
+                    states.d = States.LOAD_HIGH_A
+                }
+            States.LOAD_HIGH_A:
+                
+                if (next_btn.out){
+                    reg_a.d[N-1:16] = in16
+                    states.d = States.LOAD_LOW_B
+                }
+            States.LOAD_LOW_B:
+                
+                if (next_btn.out){
+                    reg_b.d[15:0] = in16
+                    states.d = States.LOAD_HIGH_B
+                }
+            States.LOAD_HIGH_B:
+                
+                if (next_btn.out){
+                    reg_b.d[N-1:16] = in16
+                    states.d = States.LOAD_LOW_A
+                }
+        }
+        
+        io_led[0] = out16[7:0]
+        io_led[1] = out16[15:8]
+        io_led[2][2:0] = c{alu.z, alu.v, alu.n}
+        io_led[2][7:5] = states.q
+        
+    }
+}
