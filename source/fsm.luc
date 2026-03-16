@@ -1,0 +1,89 @@
+module fsm (
+    input clk,  // clock
+    input rst,  // reset
+    
+    input slowclk,    // the output of edge_detector with slow clock input at alchitry top
+    input start_press,      // button after conditioning and edge detected
+    input equal,      // this is from the comparator
+    input last_index, // when index is == N-1
+    
+    output index_load_zero,
+    output index_inc,
+    output sample_enable,
+    output running,
+    output error,
+    output state_code[6]
+) {
+    
+    enum States {
+        INC,
+        IDLE,
+        CHECK,
+        HALT,
+        INIT,
+        WAIT_1,
+        WAIT_2
+    }
+    
+    dff states[$width(States)](#INIT(States.IDLE), .clk(clk), .rst(rst))
+    always {
+        states.d = states.q
+        state_code = 6b000000
+        index_load_zero = 0
+        index_inc = 0
+        sample_enable = 0
+        running = 0
+        error = 0
+        
+        case(states.q){
+            States.IDLE:
+                state_code = 6b000001
+                if (start_press){
+                    states.d = States.INIT
+                }
+            
+            States.INIT:
+                state_code = 6b000100
+                index_load_zero = 1
+                states.d = States.WAIT_1
+            
+            States.WAIT_1:
+                state_code = 6b000101
+                sample_enable = 1
+                running = 1
+                states.d = States.WAIT_2
+                
+            States.WAIT_2:
+                state_code = 6b000110
+                sample_enable = 1
+                running = 1
+                states.d = States.CHECK
+            
+            States.CHECK:
+                state_code = 6b000010
+                running = 1
+                if(slowclk & equal & ~last_index){
+                    states.d = States.INC
+                }
+                else if(slowclk & equal & last_index){
+                    states.d = States.IDLE
+                }
+                else if(slowclk & ~equal){
+                    states.d = States.HALT
+                }
+                
+            States.INC:
+                state_code = 6b000111
+                index_inc = 1
+                running = 1
+                states.d = States.WAIT_1
+                
+            States.HALT:
+                state_code = 6b000011
+                error = 1
+                if(start_press){
+                    states.d = States.INIT
+                }
+        }
+    }
+}
