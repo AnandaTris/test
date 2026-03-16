@@ -1,0 +1,9 @@
+module mux2to1 (
+    input data[2], 
+    input s,
+    output out
+) {
+    always {
+        out = (s & data[1]) | (~s & data[0])
+    }
+}
