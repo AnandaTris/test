@@ -1,0 +1,25 @@
+module boolean #(
+    SIZE = 32 : SIZE > 0
+)(
+    input a[SIZE],
+    input b[SIZE],
+    input alufn[6],
+    output bool[SIZE]
+) {
+    mux4to1 mux[SIZE]
+    
+    always {
+      repeat(i, SIZE, 0, 1) {
+        mux.data[i][0] = alufn[0]
+        mux.data[i][1] = alufn[1]
+        mux.data[i][2] = alufn[2]
+        mux.data[i][3] = alufn[3]
+    
+        mux.s[i][0] = a[i]
+        mux.s[i][1] = b[i]
+    
+        bool[i] = mux.out[i]
+      }
+    }
+    
+}
